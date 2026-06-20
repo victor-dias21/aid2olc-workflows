@@ -1,5 +1,38 @@
 # Developer's Guide
 
+This guide covers local checks for AIDLC Operations Workflows maintainers.
+
+## Local AIDLC Checks
+
+Run these before opening a PR that changes rules, docs, or installers:
+
+```bash
+npx markdownlint-cli2 "**/*.md"
+bash -n scripts/install.sh
+git diff --check
+```
+
+Validate the PowerShell installer parser:
+
+```powershell
+$tokens = $null
+$errors = $null
+$null = [System.Management.Automation.Language.Parser]::ParseFile(
+  "scripts/install.ps1",
+  [ref]$tokens,
+  [ref]$errors
+)
+if ($errors) { $errors; exit 1 }
+```
+
+Dry-run each supported agent target:
+
+```bash
+for agent in kiro claude codex cursor antigravity; do
+  scripts/install.sh --agent "$agent" --target . --dry-run
+done
+```
+
 ## Running CodeBuild Locally
 
 You can run AWS CodeBuild builds locally using the [CodeBuild local agent](https://docs.aws.amazon.com/codebuild/latest/userguide/use-codebuild-agent.html). This is useful for testing buildspec changes without pushing to the remote.

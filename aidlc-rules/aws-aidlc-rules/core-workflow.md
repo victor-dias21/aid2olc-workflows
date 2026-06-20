@@ -1,539 +1,157 @@
-# PRIORITY: This workflow OVERRIDES all other built-in workflows
-# When user requests software development, ALWAYS follow this workflow FIRST
-
-## Adaptive Workflow Principle
-**The workflow adapts to the work, not the other way around.**
-
-The AI model intelligently assesses what stages are needed based on:
-1. User's stated intent and clarity
-2. Existing codebase state (if any)
-3. Complexity and scope of change
-4. Risk and impact assessment
-
-## MANDATORY: Rule Details Loading
-**CRITICAL**: When performing any phase, you MUST read and use relevant content from rule detail files. Check these paths in order and use the first one that exists, regardless of which IDE or setup method was used:
-- `.aidlc/aidlc-rules/aws-aidlc-rule-details/` (typical with AI-assisted setup)
-- `.aidlc-rule-details/` (typical with Cursor, Cline, Claude Code, GitHub Copilot, OpenAI Codex)
-- `.kiro/aws-aidlc-rule-details/` (typical with Kiro IDE and CLI)
-- `.amazonq/aws-aidlc-rule-details/` (typical with Amazon Q Developer)
-
-All subsequent rule detail file references (e.g., `common/process-overview.md`, `inception/workspace-detection.md`) are relative to whichever rule details directory was resolved above.
-
-**Common Rules**: ALWAYS load common rules at workflow start:
-- Load `common/process-overview.md` for workflow overview
-- Load `common/session-continuity.md` for session resumption guidance
-- Load `common/content-validation.md` for content validation requirements
-- Load `common/question-format-guide.md` for question formatting rules
-- Reference these throughout the workflow execution
-
-## MANDATORY: Extensions Loading (Context-Optimized)
-**CRITICAL**: At workflow start, scan the `extensions/` directory recursively but load ONLY lightweight opt-in files — NOT full rule files. Full rule files are loaded on-demand after the user opts in.
-
-**Loading process**:
-1. List all subdirectories under `extensions/` (e.g., `extensions/security/`, `extensions/compliance/`)
-2. In each subdirectory, load ONLY `*.opt-in.md` files — these contain the extension's opt-in prompt. The corresponding rules file is derived by convention: strip the `.opt-in.md` suffix and append `.md` (e.g., `security-baseline.opt-in.md` → `security-baseline.md`)
-3. Do NOT load full rule files (e.g., `security-baseline.md`) at this stage
-
-**Deferred Rule Loading**:
-- During Requirements Analysis, opt-in prompts from the loaded `*.opt-in.md` files are presented to the user
-- When the user opts IN for an extension, load the corresponding rules file (derived by naming convention) at that point
-- When the user opts OUT, the full rules file is never loaded — saving context
-- Extensions without a matching `*.opt-in.md` file are always enforced — load their rule files immediately at workflow start
-
-**Enforcement** (applies only to loaded/enabled extensions):
-- Extension rules are hard constraints, not optional guidance
-- At each stage, the model intelligently evaluates which extension rules are applicable based on the stage's purpose, the artifacts being produced, and the context of the work — enforce only those rules that are relevant
-- Rules that are not applicable to the current stage should be marked as N/A in the compliance summary (this is not a blocking finding)
-- Non-compliance with any applicable enabled extension rule is a **blocking finding** — do NOT present stage completion until resolved
-- When presenting stage completion, include a summary of extension rule compliance (compliant/non-compliant/N/A per rule, with brief rationale for N/A determinations)
-
-**Conditional Enforcement**: Extensions may be conditionally enabled/disabled. See `inception/requirements-analysis.md` for the opt-in mechanism. Before enforcing any extension at ANY stage, check its `Enabled` status in `aidlc-docs/aidlc-state.md` under `## Extension Configuration`. Skip disabled extensions and log the skip in audit.md. Default to enforced if no configuration exists. 
-
-## MANDATORY: Content Validation
-**CRITICAL**: Before creating ANY file, you MUST validate content according to `common/content-validation.md` rules:
-- Validate Mermaid diagram syntax
-- Validate ASCII art diagrams (see `common/ascii-diagram-standards.md`)
-- Escape special characters properly
-- Provide text alternatives for complex visual content
-- Test content parsing compatibility
-
-## MANDATORY: Question File Format
-**CRITICAL**: When asking questions at any phase, you MUST follow question format guidelines.
-
-**See `common/question-format-guide.md` for complete question formatting rules including**:
-- Multiple choice format (A, B, C, D, E options)
-- [Answer]: tag usage
-- Answer validation and ambiguity resolution
-
-## MANDATORY: Custom Welcome Message
-**CRITICAL**: When starting ANY software development request, you MUST display the welcome message.
-
-**How to Display Welcome Message**:
-1. Load the welcome message from `common/welcome-message.md` (in the resolved rule details directory)
-2. Display the complete message to the user
-3. This should only be done ONCE at the start of a new workflow
-4. Do NOT load this file in subsequent interactions to save context space
-
-# Adaptive Software Development Workflow
-
----
-
-# INCEPTION PHASE
-
-**Purpose**: Planning, requirements gathering, and architectural decisions
-
-**Focus**: Determine WHAT to build and WHY
-
-**Stages in INCEPTION PHASE**:
-- Workspace Detection (ALWAYS)
-- Reverse Engineering (CONDITIONAL - Brownfield only)
-- Requirements Analysis (ALWAYS - Adaptive depth)
-- User Stories (CONDITIONAL)
-- Workflow Planning (ALWAYS)
-- Application Design (CONDITIONAL)
-- Units Generation (CONDITIONAL)
-
----
-
-## Workspace Detection (ALWAYS EXECUTE)
-
-1. **MANDATORY**: Log initial user request in audit.md with complete raw input
-2. Load all steps from `inception/workspace-detection.md`
-3. Execute workspace detection:
-   - Check for existing aidlc-state.md (resume if found)
-   - Scan workspace for existing code
-   - Determine if brownfield or greenfield
-   - Check for existing reverse engineering artifacts
-4. Determine next phase: Reverse Engineering (if brownfield and no artifacts) OR Requirements Analysis
-5. **MANDATORY**: Log findings in audit.md
-6. Present completion message to user (see workspace-detection.md for message formats)
-7. Automatically proceed to next phase
-
-## Reverse Engineering (CONDITIONAL - Brownfield Only)
-
-**Execute IF**:
-- Existing codebase detected
-- No previous reverse engineering artifacts found
-
-**Skip IF**:
-- Greenfield project
-- Previous reverse engineering artifacts exist
-
-**Execution**:
-1. **MANDATORY**: Log start of reverse engineering in audit.md
-2. Load all steps from `inception/reverse-engineering.md`
-3. Execute reverse engineering:
-   - Analyze all packages and components
-   - Generate a business overview of the whole system covering the business transactions
-   - Generate architecture documentation
-   - Generate code structure documentation
-   - Generate API documentation
-   - Generate component inventory
-   - Generate Interaction Diagrams depicting how business transactions are implemented across components
-   - Generate technology stack documentation
-   - Generate dependencies documentation
-
-4. **Wait for Explicit Approval**: Present detailed completion message (see reverse-engineering.md for message format) - DO NOT PROCEED until user confirms
-5. **MANDATORY**: Log user's response in audit.md with complete raw input
-
-## Requirements Analysis (ALWAYS EXECUTE - Adaptive Depth)
-
-**Always executes** but depth varies based on request clarity and complexity:
-- **Minimal**: Simple, clear request - just document intent analysis
-- **Standard**: Normal complexity - gather functional and non-functional requirements
-- **Comprehensive**: Complex, high-risk - detailed requirements with traceability
-
-**Execution**:
-1. **MANDATORY**: Log any user input during this phase in audit.md
-2. Load all steps from `inception/requirements-analysis.md`
-3. Execute requirements analysis:
-   - Load reverse engineering artifacts (if brownfield)
-   - Analyze user request (intent analysis)
-   - Determine requirements depth needed
-   - Assess current requirements
-   - Ask clarifying questions (if needed)
-   - Generate requirements document
-4. Execute at appropriate depth (minimal/standard/comprehensive)
-5. **Wait for Explicit Approval**: Follow approval format from requirements-analysis.md detailed steps - DO NOT PROCEED until user confirms
-6. **MANDATORY**: Log user's response in audit.md with complete raw input
-
-## User Stories (CONDITIONAL)
-
-**INTELLIGENT ASSESSMENT**: Use multi-factor analysis to determine if user stories add value:
-
-**ALWAYS Execute IF** (High Priority Indicators):
-- New user-facing features or functionality
-- Changes affecting user workflows or interactions
-- Multiple user types or personas involved
-- Complex business requirements with acceptance criteria needs
-- Cross-functional team collaboration required
-- Customer-facing API or service changes
-- New product capabilities or enhancements
-
-**LIKELY Execute IF** (Medium Priority - Assess Complexity):
-- Modifications to existing user-facing features
-- Backend changes that indirectly affect user experience
-- Integration work that impacts user workflows
-- Performance improvements with user-visible benefits
-- Security enhancements affecting user interactions
-- Data model changes affecting user data or reports
-
-**COMPLEXITY-BASED ASSESSMENT**: For medium priority cases, execute user stories if:
-- Request involves multiple components or services
-- Changes span multiple user touchpoints
-- Business logic is complex or has multiple scenarios
-- Requirements have ambiguity that stories could clarify
-- Implementation affects multiple user journeys
-- Change has significant business impact or risk
-
-**SKIP ONLY IF** (Low Priority - Simple Cases):
-- Pure internal refactoring with zero user impact
-- Simple bug fixes with clear, isolated scope
-- Infrastructure changes with no user-facing effects
-- Technical debt cleanup with no functional changes
-- Developer tooling or build process improvements
-- Documentation-only updates
-
-**ASSESSMENT CRITERIA**: When in doubt, favor inclusion of user stories for:
-- Requests with business stakeholder involvement
-- Changes requiring user acceptance testing
-- Features with multiple implementation approaches
-- Work that benefits from shared team understanding
-- Projects where requirements clarity is valuable
-
-**ASSESSMENT PROCESS**: 
-1. Analyze request complexity and scope
-2. Identify user impact (direct or indirect)
-3. Evaluate business context and stakeholder needs
-4. Consider team collaboration benefits
-5. Default to inclusion for borderline cases
-
-**Note**: If Requirements Analysis executed, Stories can reference and build upon those requirements.
-
-**User Stories has two parts within one stage**:
-1. **Part 1 - Planning**: Create story plan with questions, collect answers, analyze for ambiguities, get approval
-2. **Part 2 - Generation**: Execute approved plan to generate stories and personas
-
-**Execution**:
-1. **MANDATORY**: Log any user input during this phase in audit.md
-2. Load all steps from `inception/user-stories.md`
-3. **MANDATORY**: Perform intelligent assessment (Step 1 in user-stories.md) to validate user stories are needed
-4. Load reverse engineering artifacts (if brownfield)
-5. If Requirements exist, reference them when creating stories
-6. Execute at appropriate depth (minimal/standard/comprehensive)
-7. **PART 1 - Planning**: Create story plan with questions, wait for user answers, analyze for ambiguities, get approval
-8. **PART 2 - Generation**: Execute approved plan to generate stories and personas
-9. **Wait for Explicit Approval**: Follow approval format from user-stories.md detailed steps - DO NOT PROCEED until user confirms
-10. **MANDATORY**: Log user's response in audit.md with complete raw input
-
-## Workflow Planning (ALWAYS EXECUTE)
-
-1. **MANDATORY**: Log any user input during this phase in audit.md
-2. Load all steps from `inception/workflow-planning.md`
-3. **MANDATORY**: Load content validation rules from `common/content-validation.md`
-4. Load all prior context:
-   - Reverse engineering artifacts (if brownfield)
-   - Intent analysis
-   - Requirements (if executed)
-   - User stories (if executed)
-5. Execute workflow planning:
-   - Determine which phases to execute
-   - Determine depth level for each phase
-   - Create multi-package change sequence (if brownfield)
-   - Generate workflow visualization (VALIDATE Mermaid syntax before writing)
-6. **MANDATORY**: Validate all content before file creation per content-validation.md rules
-7. **Wait for Explicit Approval**: Present recommendations using language from workflow-planning.md Step 9, emphasizing user control to override recommendations - DO NOT PROCEED until user confirms
-8. **MANDATORY**: Log user's response in audit.md with complete raw input
-
-## Application Design (CONDITIONAL)
-
-**Execute IF**:
-- New components or services needed
-- Component methods and business rules need definition
-- Service layer design required
-- Component dependencies need clarification
-
-**Skip IF**:
-- Changes within existing component boundaries
-- No new components or methods
-- Pure implementation changes
-
-**Execution**:
-1. **MANDATORY**: Log any user input during this phase in audit.md
-2. Load all steps from `inception/application-design.md`
-3. Load reverse engineering artifacts (if brownfield)
-4. Execute at appropriate depth (minimal/standard/comprehensive)
-5. **Wait for Explicit Approval**: Present detailed completion message (see application-design.md for message format) - DO NOT PROCEED until user confirms
-6. **MANDATORY**: Log user's response in audit.md with complete raw input
-
-## Units Generation (CONDITIONAL)
-
-**Execute IF**:
-- System needs decomposition into multiple units of work
-- Multiple services or modules required
-- Complex system requiring structured breakdown
-
-**Skip IF**:
-- Single simple unit
-- No decomposition needed
-- Straightforward single-component implementation
-
-**Execution**:
-1. **MANDATORY**: Log any user input during this phase in audit.md
-2. Load all steps from `inception/units-generation.md`
-3. Load reverse engineering artifacts (if brownfield)
-4. Execute at appropriate depth (minimal/standard/comprehensive)
-5. **Wait for Explicit Approval**: Present detailed completion message (see units-generation.md for message format) - DO NOT PROCEED until user confirms
-6. **MANDATORY**: Log user's response in audit.md with complete raw input
-
----
-
-# 🟢 CONSTRUCTION PHASE
-
-**Purpose**: Detailed design, NFR implementation, and code generation
-
-**Focus**: Determine HOW to build it
-
-**Stages in CONSTRUCTION PHASE**:
-- Per-Unit Loop (executes for each unit):
-  - Functional Design (CONDITIONAL, per-unit)
-  - NFR Requirements (CONDITIONAL, per-unit)
-  - NFR Design (CONDITIONAL, per-unit)
-  - Infrastructure Design (CONDITIONAL, per-unit)
-  - Code Generation (ALWAYS, per-unit)
-- Build and Test (ALWAYS - after all units complete)
-
-**Note**: Each unit is completed fully (design + code) before moving to the next unit.
-
----
-
-## Per-Unit Loop (Executes for Each Unit)
-
-**For each unit of work, execute the following stages in sequence:**
-
-### Functional Design (CONDITIONAL, per-unit)
-
-**Execute IF**:
-- New data models or schemas
-- Complex business logic
-- Business rules need detailed design
-
-**Skip IF**:
-- Simple logic changes
-- No new business logic
-
-**Execution**:
-1. **MANDATORY**: Log any user input during this stage in audit.md
-2. Load all steps from `construction/functional-design.md`
-3. Execute functional design for this unit
-4. **MANDATORY**: Present standardized 2-option completion message as defined in functional-design.md - DO NOT use emergent 3-option behavior
-5. **Wait for Explicit Approval**: User must choose between "Request Changes" or "Continue to Next Stage" - DO NOT PROCEED until user confirms
-6. **MANDATORY**: Log user's response in audit.md with complete raw input
-
-### NFR Requirements (CONDITIONAL, per-unit)
-
-**Execute IF**:
-- Performance requirements exist
-- Security considerations needed
-- Scalability concerns present
-- Tech stack selection required
-
-**Skip IF**:
-- No NFR requirements
-- Tech stack already determined
-
-**Execution**:
-1. **MANDATORY**: Log any user input during this stage in audit.md
-2. Load all steps from `construction/nfr-requirements.md`
-3. Execute NFR assessment for this unit
-4. **MANDATORY**: Present standardized 2-option completion message as defined in nfr-requirements.md - DO NOT use emergent behavior
-5. **Wait for Explicit Approval**: User must choose between "Request Changes" or "Continue to Next Stage" - DO NOT PROCEED until user confirms
-6. **MANDATORY**: Log user's response in audit.md with complete raw input
-
-### NFR Design (CONDITIONAL, per-unit)
-
-**Execute IF**:
-- NFR Requirements was executed
-- NFR patterns need to be incorporated
-
-**Skip IF**:
-- No NFR requirements
-- NFR Requirements was skipped
-
-**Execution**:
-1. **MANDATORY**: Log any user input during this stage in audit.md
-2. Load all steps from `construction/nfr-design.md`
-3. Execute NFR design for this unit
-4. **MANDATORY**: Present standardized 2-option completion message as defined in nfr-design.md - DO NOT use emergent behavior
-5. **Wait for Explicit Approval**: User must choose between "Request Changes" or "Continue to Next Stage" - DO NOT PROCEED until user confirms
-6. **MANDATORY**: Log user's response in audit.md with complete raw input
-
-### Infrastructure Design (CONDITIONAL, per-unit)
-
-**Execute IF**:
-- Infrastructure services need mapping
-- Deployment architecture required
-- Cloud resources need specification
-
-**Skip IF**:
-- No infrastructure changes
-- Infrastructure already defined
-
-**Execution**:
-1. **MANDATORY**: Log any user input during this stage in audit.md
-2. Load all steps from `construction/infrastructure-design.md`
-3. Execute infrastructure design for this unit
-4. **MANDATORY**: Present standardized 2-option completion message as defined in infrastructure-design.md - DO NOT use emergent behavior
-5. **Wait for Explicit Approval**: User must choose between "Request Changes" or "Continue to Next Stage" - DO NOT PROCEED until user confirms
-6. **MANDATORY**: Log user's response in audit.md with complete raw input
-
-### Code Generation (ALWAYS EXECUTE, per-unit)
-
-**Always executes for each unit**
-
-**Code Generation has two parts within one stage**:
-1. **Part 1 - Planning**: Create detailed code generation plan with explicit steps
-2. **Part 2 - Generation**: Execute approved plan to generate code, tests, and artifacts
-
-**Execution**:
-1. **MANDATORY**: Log any user input during this stage in audit.md
-2. Load all steps from `construction/code-generation.md`
-3. **PART 1 - Planning**: Create code generation plan with checkboxes, get user approval
-4. **PART 2 - Generation**: Execute approved plan to generate code for this unit
-5. **MANDATORY**: Present standardized 2-option completion message as defined in code-generation.md - DO NOT use emergent behavior
-6. **Wait for Explicit Approval**: User must choose between "Request Changes" or "Continue to Next Stage" - DO NOT PROCEED until user confirms
-7. **MANDATORY**: Log user's response in audit.md with complete raw input
-
----
-
-## Build and Test (ALWAYS EXECUTE)
-
-1. **MANDATORY**: Log any user input during this phase in audit.md
-2. Load all steps from `construction/build-and-test.md`
-3. Generate comprehensive build and test instructions:
-   - Build instructions for all units
-   - Unit test execution instructions
-   - Integration test instructions (test interactions between units)
-   - Performance test instructions (if applicable)
-   - Additional test instructions as needed (contract tests, security tests, e2e tests)
-4. Create instruction files in build-and-test/ subdirectory: build-instructions.md, unit-test-instructions.md, integration-test-instructions.md, performance-test-instructions.md, build-and-test-summary.md
-5. **Wait for Explicit Approval**: Ask: "**Build and test instructions complete. Ready to proceed to Operations stage?**" - DO NOT PROCEED until user confirms
-6. **MANDATORY**: Log user's response in audit.md with complete raw input
-
----
-
-# 🟡 OPERATIONS PHASE
-
-**Purpose**: Placeholder for future deployment and monitoring workflows
-
-**Focus**: How to DEPLOY and RUN it (future expansion)
-
-**Stages in OPERATIONS PHASE**:
-- Operations (PLACEHOLDER)
-
----
-
-## Operations (PLACEHOLDER)
-
-**Status**: This stage is currently a placeholder for future expansion.
-
-The Operations stage will eventually include:
-- Deployment planning and execution
-- Monitoring and observability setup
-- Incident response procedures
-- Maintenance and support workflows
-- Production readiness checklists
-
-**Current State**: All build and test activities are handled in the CONSTRUCTION phase.
-
-## Key Principles
-
-- **Adaptive Execution**: Only execute stages that add value
-- **Transparent Planning**: Always show execution plan before starting
-- **User Control**: User can request stage inclusion/exclusion
-- **Progress Tracking**: Update aidlc-state.md with executed and skipped stages
-- **Complete Audit Trail**: Log ALL user inputs and AI responses in audit.md with timestamps
-  - **CRITICAL**: Capture user's COMPLETE RAW INPUT exactly as provided
-  - **CRITICAL**: Never summarize or paraphrase user input in audit log
-  - **CRITICAL**: Log every interaction, not just approvals
-- **Quality Focus**: Complex changes get full treatment, simple changes stay efficient
-- **Content Validation**: Always validate content before file creation per content-validation.md rules
-- **NO EMERGENT BEHAVIOR**: Construction phases MUST use standardized 2-option completion messages as defined in their respective rule files. DO NOT create 3-option menus or other emergent navigation patterns.
-
-## MANDATORY: Plan-Level Checkbox Enforcement
-
-### MANDATORY RULES FOR PLAN EXECUTION
-1. **NEVER complete any work without updating plan checkboxes**
-2. **IMMEDIATELY after completing ANY step described in a plan file, mark that step [x]**
-3. **This must happen in the SAME interaction where the work is completed**
-4. **NO EXCEPTIONS**: Every plan step completion MUST be tracked with checkbox updates
-
-### Two-Level Checkbox Tracking System
-- **Plan-Level**: Track detailed execution progress within each stage
-- **Stage-Level**: Track overall workflow progress in aidlc-state.md
-- **Update immediately**: All progress updates in SAME interaction where work is completed
-
-## Prompts Logging Requirements
-- **MANDATORY**: Log EVERY user input (prompts, questions, responses) with timestamp in audit.md
-- **MANDATORY**: Capture user's COMPLETE RAW INPUT exactly as provided (never summarize)
-- **MANDATORY**: Log every approval prompt with timestamp before asking the user
-- **MANDATORY**: Record every user response with timestamp after receiving it
-- **CRITICAL**: ALWAYS append changes to EDIT audit.md file, NEVER use tools and commands that completely overwrite its contents
-- **CRITICAL**: NEVER use file writing tools and commands that overwrite the entire contents of audit.md, as this causes duplication
-- Use ISO 8601 format for timestamps (YYYY-MM-DDTHH:MM:SSZ)
-- Include stage context for each entry
-
-### Audit Log Format:
-```markdown
-## [Stage Name or Interaction Type]
-**Timestamp**: [ISO timestamp]
-**User Input**: "[Complete raw user input - never summarized]"
-**AI Response**: "[AI's response or action taken]"
-**Context**: [Stage, action, or decision made]
-
----
-```
-
-### Correct Tool Usage for audit.md
-
-✅ CORRECT:
-
-1. Read the audit.md file
-2. Append/Edit the file to make changes
-
-❌ WRONG:
-
-1. Read the audit.md file
-2. Completely overwrite the audit.md with the contents of what you read, plus the new changes you want to add to it
-
-## Directory Structure
-
-```text
-<WORKSPACE-ROOT>/                   # ⚠️ APPLICATION CODE HERE
-├── [project-specific structure]    # Varies by project (see code-generation.md)
-│
-├── aidlc-docs/                     # 📄 DOCUMENTATION ONLY
-│   ├── inception/                  # 🔵 INCEPTION PHASE
-│   │   ├── plans/
-│   │   ├── reverse-engineering/    # Brownfield only
-│   │   ├── requirements/
-│   │   ├── user-stories/
-│   │   └── application-design/
-│   ├── construction/               # 🟢 CONSTRUCTION PHASE
-│   │   ├── plans/
-│   │   ├── {unit-name}/
-│   │   │   ├── functional-design/
-│   │   │   ├── nfr-requirements/
-│   │   │   ├── nfr-design/
-│   │   │   ├── infrastructure-design/
-│   │   │   └── code/               # Markdown summaries only
-│   │   └── build-and-test/
-│   ├── operations/                 # 🟡 OPERATIONS PHASE (placeholder)
-│   ├── aidlc-state.md
-│   └── audit.md
-```
-
-**CRITICAL RULE**:
-- Application code: Workspace root (NEVER in aidlc-docs/)
-- Documentation: aidlc-docs/ only
-- Project structure: See code-generation.md for patterns by project type
+# AIDLC Operations Core Workflow
+
+> This file is the portable entry point for AIDLC Operations Workflows.
+> The directory name `aidlc-rules/` is retained as a legacy package path for
+> compatibility with the upstream release tooling and existing agent installers.
+
+## Mission
+
+AIDLC Operations guides AI coding and operations agents through cloud operations,
+DevOps, infrastructure, and SRE work. It adapts AIDLC's disciplined artifact
+and approval model to operational workflows where context, blast radius,
+rollback, and human control matter more than speed.
+
+## Activation
+
+Use AIDLC Operations when the user asks about:
+
+- incident response, service degradation, alerts, or postmortems
+- infrastructure provisioning, permissions, networking, CI/CD, Kubernetes, or
+  cloud resources
+- production readiness, observability, security review, cost review, or
+  operational troubleshooting
+- any request that starts with "Using AIDLC", "Using AIDLC Operations", or
+  "Using OLC"
+
+If the user is only asking a general question, answer without creating files
+unless they ask for a durable artifact.
+
+## Rule Details Loading
+
+Resolve the rule details directory by checking these locations in order:
+
+1. `.aidlc/aidlc-rules/aws-aidlc-rule-details/`
+2. `.aidlc-rule-details/`
+3. `.kiro/aws-aidlc-rule-details/`
+4. `.amazonq/aws-aidlc-rule-details/`
+
+All detail file references below are relative to the first directory found.
+
+At workflow start, load:
+
+- `common/process-overview.md`
+- `common/session-continuity.md`
+- `common/error-handling.md`
+- `operations/operations.md`
+- `operations/severity-matrix.md`
+- `operations/ops-gates.md`
+
+Load additional operation files only when relevant:
+
+- `operations/triage.md`
+- `operations/incident.md`
+- `operations/provision-change.md`
+- `operations/production-readiness.md`
+- `operations/observability.md`
+- `operations/security-cost-review.md`
+- `operations/post-session-learning.md`
+
+## Core Operating Principles
+
+1. Context before action: gather real state before proposing changes.
+2. Read-only by default: diagnostics, listing, and inspection are autonomous.
+3. Human approves mutating work: writes, applies, deletes, restarts, rollbacks,
+   merges, and cloud changes require explicit approval.
+4. Severity defines autonomy: SEV1 is diagnostic only; SEV2/SEV3 require an
+   approved remediation plan; SEV4 is report-first.
+5. Every plan includes blast radius, rollback, validation, and owner.
+6. Learn from completed work without storing secrets.
+
+## Operational Modes
+
+Select exactly one primary mode at Pre-flight. If the request spans modes,
+start with Triage and branch.
+
+| Mode                 | Use when                                              | Detail file                               |
+| -------------------- | ----------------------------------------------------- | ----------------------------------------- |
+| Triage               | New ticket, alert, vague request, or queue item       | `operations/triage.md`                    |
+| Incident             | Something is broken, degraded, unavailable, or risky  | `operations/incident.md`                  |
+| Provision / Change   | Create, modify, decommission, or promote resources    | `operations/provision-change.md`          |
+| Production Readiness | Assess a service/change before production             | `operations/production-readiness.md`      |
+| Observability        | Logs, traces, metrics, dashboards, monitors, SLOs     | `operations/observability.md`             |
+| Security / Cost      | IAM, exposure, compliance, waste, rightsizing, budget | `operations/security-cost-review.md`      |
+
+## Five Operational Gates
+
+Every operational task follows these gates. Do not skip gates; keep them
+right-sized to the request.
+
+### Gate 1: Gather Context
+
+Collect ticket/request text, affected service, environment, account, cluster,
+namespace, recent changes, logs, metrics, traces, dashboards, and existing
+runbooks. Use read-only commands only.
+
+### Gate 2: Pre-flight
+
+Classify mode and severity. Confirm access, current context, dependencies,
+blast radius, rollback availability, and whether the user expects diagnosis,
+implementation, or documentation.
+
+### Gate 3: Plan
+
+Produce a concise plan with:
+
+- current evidence
+- hypotheses or change steps
+- blast radius
+- exact mutating actions, if any
+- rollback
+- validation checks
+- approval question for mutating work
+
+### Gate 4: Execute
+
+Execute only the approved plan. If evidence changes, stop and re-plan. Never
+expand mutating scope silently.
+
+### Gate 5: Validate / Learn
+
+Validate health and expected outcomes. Document result, unresolved risk, next
+owner, and whether a reusable rule, runbook, or template should be updated.
+
+## Severity Guardrails
+
+Use `operations/severity-matrix.md` for the full matrix.
+
+- SEV1: production outage, high user impact, data exposure, or critical shared
+  dependency down. Diagnose only and page/escalate the human owner.
+- SEV2: partial production outage, severe latency, failed release, high-risk
+  security or permission issue. Plan and execute only after explicit approval.
+- SEV3: degraded service, warning alert, isolated production issue, failing main
+  pipeline. Plan and execute only after explicit approval.
+- SEV4: low-risk warning, cost anomaly, hygiene task, documentation or report.
+  Prefer report or PR; mutating actions still require approval.
+
+## State Persistence
+
+For multi-step work, create or update `.aidlc/state/<ticket-or-topic>/` with:
+
+- `1-gather.md`
+- `2-preflight.md`
+- `3-plan.md`
+- `4-execute.md`
+- `5-validate.md`
+
+If state already exists, read it first and resume from the last incomplete gate.
+Never store secrets, tokens, private keys, passwords, or raw credentials.
+
+## Completion Contract
+
+Before finishing, report:
+
+- mode and severity
+- actions taken or why no action was taken
+- validation result
+- residual risks or blocked items
+- files, PRs, tickets, dashboards, or commands the user should know about

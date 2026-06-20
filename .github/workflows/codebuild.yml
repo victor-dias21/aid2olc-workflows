@@ -514,6 +514,6 @@ jobs:
             gh release create "$TAG" "${ARTIFACTS[@]}" \
               --repo "$REPO" \
               --draft \
-              --title "AI-DLC Workflow ${TAG#v}" \
+              --title "AIDLC Operations Workflow ${TAG#v}" \
               --notes "Build artifacts from CodeBuild. Rules zip pending from release workflow."
           fi
